@@ -11,6 +11,11 @@ import {
 
 import appCss from "../styles.css?url";
 import {
+  BRAND_DESCRIPTION,
+  BRAND_FULL_TITLE,
+  BRAND_NAME,
+} from "@/lib/brand";
+import {
   assertRouteAccess,
   isFirmDashboardPath,
   isSuperAdminPath,
@@ -189,18 +194,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "BatchWise Pro digitizes and automates Batch Manufacturing Report (BMR) issuance for RP Industries." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "BatchWise Pro digitizes and automates Batch Manufacturing Report (BMR) issuance for RP Industries." },
+      { title: BRAND_FULL_TITLE },
+      { name: "description", content: BRAND_DESCRIPTION },
+      { name: "author", content: BRAND_NAME },
+      { property: "og:title", content: BRAND_FULL_TITLE },
+      { property: "og:description", content: BRAND_DESCRIPTION },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "BatchWise Pro digitizes and automates Batch Manufacturing Report (BMR) issuance for RP Industries." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/90d52934-49f2-41b3-8084-25c695668779/id-preview-bfda6f5b--c604bc8b-5f58-4414-a37f-ca3e55d94524.lovable.app-1778585144659.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/90d52934-49f2-41b3-8084-25c695668779/id-preview-bfda6f5b--c604bc8b-5f58-4414-a37f-ca3e55d94524.lovable.app-1778585144659.png" },
+      { name: "twitter:title", content: BRAND_FULL_TITLE },
+      { name: "twitter:description", content: BRAND_DESCRIPTION },
     ],
     links: [
       {

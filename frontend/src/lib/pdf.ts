@@ -167,7 +167,7 @@ export async function generateDemoBmrPdf(productName: string): Promise<string> {
 
   const drawHeader = (page: any, title: string, pageNum: number, total: number) => {
     page.drawRectangle({ x: 0, y: pageH - 70, width: pageW, height: 70, color: rgb(0.1, 0.35, 0.55) });
-    page.drawText("RP INDUSTRIES", { x: 30, y: pageH - 30, size: 16, font: bold, color: rgb(1, 1, 1) });
+    page.drawText("Ssteam", { x: 30, y: pageH - 30, size: 16, font: bold, color: rgb(1, 1, 1) });
     page.drawText("Batch Manufacturing Record", { x: 30, y: pageH - 48, size: 10, font: helv, color: rgb(0.9, 0.95, 1) });
     page.drawText(`Product: ${productName}`, { x: 30, y: pageH - 62, size: 9, font: helv, color: rgb(0.9, 0.95, 1) });
     page.drawText(`Page ${pageNum} of ${total}`, { x: pageW - 90, y: pageH - 62, size: 9, font: helv, color: rgb(0.9, 0.95, 1) });
