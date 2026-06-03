@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
+
+# Environment & secrets
+.env.local
+*.local
+.dev.vars
+frontend/pass.txt
+
+# Runtime data (JSON stores, uploaded PDFs)
+backend/data/
+
+# Logs
+logs/
+*.log
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Frontend tooling
+frontend/.wrangler/
+frontend/.lovable/
+frontend/.vite/
+
+# Wrangler
+.wrangler/
