@@ -1,5 +1,11 @@
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+const fs = require("fs");
+
+const envLocal = path.join(__dirname, "..", ".env.local");
+const envFile = path.join(__dirname, "..", ".env");
+require("dotenv").config({
+  path: fs.existsSync(envLocal) ? envLocal : envFile,
+});
 
 const dataDir = path.resolve(
   __dirname,

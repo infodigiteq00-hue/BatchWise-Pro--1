@@ -16,6 +16,16 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+app.get("/", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "BatchWise Pro API",
+    message: "This is the backend only. Open the frontend app on Vercel.",
+    health: "/api/health",
+    apiPrefix: "/api",
+  });
+});
+
 app.use("/api", apiRoutes);
 
 app.use(notFound);
