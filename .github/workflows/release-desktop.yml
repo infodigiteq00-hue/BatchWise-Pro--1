@@ -29,13 +29,17 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Verify UI build output
-        run: test -f frontend/.vercel/output/functions/__server.func/index.mjs
+        run: |
+          du -sh frontend/.vercel/output
+          test -f frontend/.vercel/output/functions/__server.func/index.mjs
+          test -d frontend/.vercel/output/static
+          ls frontend/.vercel/output/static | head -5
 
       - name: Upload UI build
         uses: actions/upload-artifact@v4
         with:
           name: frontend-ui
-          path: frontend/.vercel/output
+          path: frontend/.vercel/output/
           if-no-files-found: error
 
   build:
@@ -66,22 +70,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-ui
-          path: frontend/.vercel/output
+          path: _ui-artifact
+
+      - name: Place UI into project tree
+        shell: bash
+        run: |
+          rm -rf frontend/.vercel/output
+          mkdir -p frontend/.vercel/output
+          if [ -f "_ui-artifact/functions/__server.func/index.mjs" ]; then
+            cp -a _ui-artifact/. frontend/.vercel/output/
+          else
+            cp -a _ui-artifact/. frontend/.vercel/output/
+          fi
+          test -f frontend/.vercel/output/functions/__server.func/index.mjs
+          test -d frontend/.vercel/output/static
+          echo "UI files placed OK"
 
       - name: Install Linux AppImage dependencies
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y fuse3 file
-          sudo apt-get install -y libfuse2t64 libfuse2 2>/dev/null || true
+          sudo apt-get install -y fuse3 file rpm
+          sudo apt-get install -y libfuse2t64 2>/dev/null || sudo apt-get install -y libfuse2 2>/dev/null || true
 
       - name: Install desktop dependencies
         run: npm ci
         working-directory: desktop
 
       - name: Build desktop installer
-        run: npm run dist:${{ matrix.platform }}
+        shell: bash
         working-directory: desktop
+        run: npm run dist:${{ matrix.platform }}
         env:
           CI: true
           SKIP_UI_BUILD: "1"
@@ -90,9 +109,9 @@ jobs:
           VITE_API_URL: http://127.0.0.1:39281/api
 
       - name: List release output
-        run: ls -la release || dir release
-        working-directory: desktop
         shell: bash
+        working-directory: desktop
+        run: ls -la release/
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
@@ -120,8 +139,9 @@ jobs:
         run: |
           count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null | wc -l)
           echo "Installer count: $count"
+          find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null || true
           if [ "$count" = "0" ]; then
-            echo "::error::No installers built. Open failed win/mac/linux jobs and read the log."
+            echo "::error::No installers built. Open failed win/mac/linux jobs → Build desktop installer step."
             exit 1
           fi
 

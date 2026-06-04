@@ -85,7 +85,9 @@ console.log("Copying backend…");
 copyBackend();
 
 console.log("Installing backend production dependencies…");
-execSync("npm ci --omit=dev", {
+const backendInstall =
+  process.env.CI === "true" ? "npm install --omit=dev" : "npm ci --omit=dev";
+execSync(backendInstall, {
   cwd: backendBundle,
   stdio: "inherit",
 });

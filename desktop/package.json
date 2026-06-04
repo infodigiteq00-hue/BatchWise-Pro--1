@@ -36,7 +36,8 @@
     "asar": true,
     "win": {
       "target": ["nsis"],
-      "artifactName": "BatchWise-Pro-Windows-Setup.${ext}"
+      "artifactName": "BatchWise-Pro-Windows-Setup.${ext}",
+      "signAndEditExecutable": false
     },
     "mac": {
       "target": ["dmg"],
