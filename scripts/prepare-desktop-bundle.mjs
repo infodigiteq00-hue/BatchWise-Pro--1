@@ -45,7 +45,7 @@ function copyBackend() {
 
 console.log("Preparing desktop bundle…\n");
 
-if (!fs.existsSync(uiOutput)) {
+if (!fs.existsSync(uiOutput) || process.env.CI) {
   console.log("Building frontend for desktop (API → 127.0.0.1:39281)…");
   execSync("npm run build", {
     cwd: path.join(root, "frontend"),

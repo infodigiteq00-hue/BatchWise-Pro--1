@@ -35,6 +35,10 @@ jobs:
             frontend/package-lock.json
             desktop/package-lock.json
 
+      - name: Install Linux AppImage dependencies
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y libfuse2 fuse3 file
+
       - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend
@@ -52,7 +56,13 @@ jobs:
         working-directory: desktop
         env:
           CI: true
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: http://127.0.0.1:39281/api
+
+      - name: List release output
+        run: dir release || ls -la release
+        working-directory: desktop
+        shell: bash
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -64,20 +74,35 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    if: always() && needs.build.result != 'cancelled'
 
     steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/download-artifact@v4
         with:
           pattern: desktop-*
           path: artifacts
           merge-multiple: true
 
+      - name: List downloaded artifacts
+        run: find artifacts -type f 2>/dev/null || dir /s artifacts
+
+      - name: Check for installer files
+        id: artifacts
+        run: |
+          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) 2>/dev/null | wc -l)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" = "0" ]; then
+            echo "::error::No desktop installers were built. Open each failed matrix job log (win/mac/linux)."
+            exit 1
+          fi
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
-          files: artifacts/**/*
+          tag_name: ${{ github.ref_name }}
+          name: BatchWise Pro ${{ github.ref_name }}
+          allowUpdates: true
+          make_latest: true
+          files: artifacts/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

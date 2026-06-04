@@ -40,11 +40,15 @@
     },
     "mac": {
       "target": ["dmg"],
-      "artifactName": "BatchWise-Pro-macOS.${ext}"
+      "artifactName": "BatchWise-Pro-macOS.${ext}",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "linux": {
       "target": ["AppImage"],
-      "artifactName": "BatchWise-Pro-Linux.${ext}"
+      "artifactName": "BatchWise-Pro-Linux.${ext}",
+      "category": "Office"
     },
     "nsis": {
       "oneClick": false,
