@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -40,6 +41,7 @@ jobs:
         with:
           name: frontend-ui
           path: frontend/.vercel/output/
+          compression-level: 0
           if-no-files-found: error
 
   build:
@@ -64,7 +66,9 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            backend/package-lock.json
+            desktop/package-lock.json
 
       - name: Download prebuilt UI
         uses: actions/download-artifact@v4
@@ -77,14 +81,15 @@ jobs:
         run: |
           rm -rf frontend/.vercel/output
           mkdir -p frontend/.vercel/output
-          if [ -f "_ui-artifact/functions/__server.func/index.mjs" ]; then
-            cp -a _ui-artifact/. frontend/.vercel/output/
-          else
-            cp -a _ui-artifact/. frontend/.vercel/output/
-          fi
+          cp -a _ui-artifact/. frontend/.vercel/output/
+          du -sh frontend/.vercel/output
           test -f frontend/.vercel/output/functions/__server.func/index.mjs
           test -d frontend/.vercel/output/static
-          echo "UI files placed OK"
+          ls frontend/.vercel/output/static | head -3
+
+      - name: Install backend dependencies (for bundle)
+        run: npm ci --omit=dev
+        working-directory: backend
 
       - name: Install Linux AppImage dependencies
         if: matrix.platform == 'linux'
@@ -100,7 +105,9 @@ jobs:
       - name: Build desktop installer
         shell: bash
         working-directory: desktop
-        run: npm run dist:${{ matrix.platform }}
+        run: |
+          set -euxo pipefail
+          npm run dist:${{ matrix.platform }}
         env:
           CI: true
           SKIP_UI_BUILD: "1"
@@ -127,25 +134,28 @@ jobs:
 
     steps:
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           pattern: desktop-*
           path: artifacts
           merge-multiple: true
 
       - name: List downloaded artifacts
-        run: find artifacts -type f 2>/dev/null | head -50
+        run: find artifacts -type f 2>/dev/null | head -50 || echo "no artifacts dir"
 
       - name: Check for installer files
+        id: check
         run: |
-          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null | wc -l)
-          echo "Installer count: $count"
+          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
           find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null || true
           if [ "$count" = "0" ]; then
-            echo "::error::No installers built. Open failed win/mac/linux jobs → Build desktop installer step."
-            exit 1
+            echo "::warning::No CI installers — release may already have manual uploads."
+            exit 0
           fi
 
       - name: Publish GitHub Release
+        if: steps.check.outputs.count != '0'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}

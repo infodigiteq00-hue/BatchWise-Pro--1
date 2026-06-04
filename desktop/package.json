@@ -41,6 +41,7 @@
     },
     "mac": {
       "target": ["dmg"],
+      "arch": ["arm64", "x64"],
       "artifactName": "BatchWise-Pro-macOS.${ext}",
       "identity": null,
       "hardenedRuntime": false,

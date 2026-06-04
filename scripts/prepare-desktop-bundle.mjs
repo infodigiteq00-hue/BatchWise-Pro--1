@@ -37,7 +37,7 @@ function rm(dir) {
 
 function copyRecursive(src, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.cpSync(src, dest, { recursive: true });
+  fs.cpSync(src, dest, { recursive: true, dereference: true });
 }
 
 function copyBackend() {
@@ -51,6 +51,25 @@ function copyBackend() {
 
 function hasPrebuiltUi() {
   return fs.existsSync(uiServerEntry);
+}
+
+function installBackendBundleDeps() {
+  if (process.env.CI === "true") {
+    const srcMods = path.join(backendSrc, "node_modules");
+    if (!fs.existsSync(srcMods)) {
+      console.log("Installing backend deps in repo (CI)…");
+      execSync("npm ci --omit=dev", { cwd: backendSrc, stdio: "inherit" });
+    }
+    console.log("Copying backend node_modules into bundle…");
+    copyRecursive(srcMods, path.join(backendBundle, "node_modules"));
+    return;
+  }
+
+  console.log("Installing backend production dependencies in bundle…");
+  execSync("npm ci --omit=dev", {
+    cwd: backendBundle,
+    stdio: "inherit",
+  });
 }
 
 console.log("Preparing desktop bundle…\n");
@@ -83,14 +102,7 @@ fs.mkdirSync(bundleRoot, { recursive: true });
 
 console.log("Copying backend…");
 copyBackend();
-
-console.log("Installing backend production dependencies…");
-const backendInstall =
-  process.env.CI === "true" ? "npm install --omit=dev" : "npm ci --omit=dev";
-execSync(backendInstall, {
-  cwd: backendBundle,
-  stdio: "inherit",
-});
+installBackendBundleDeps();
 
 console.log("Copying UI build…");
 copyRecursive(uiOutput, uiBundle);
