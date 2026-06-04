@@ -22,10 +22,16 @@ async function authenticate(req, res, next) {
     const payload = verifyToken(token);
     const user = await users.findById(payload.sub);
     if (!user) {
-      return res.status(401).json({ error: "Invalid or expired session" });
+      return res.status(401).json({
+        error: "Invalid or expired session",
+        code: "SESSION_INVALID",
+      });
     }
     if (user.role !== "super_admin" && user.status !== "active") {
-      return res.status(401).json({ error: "Invalid or expired session" });
+      return res.status(401).json({
+        error: "Invalid or expired session",
+        code: "SESSION_INVALID",
+      });
     }
     req.user = user;
     req.auth = payload;

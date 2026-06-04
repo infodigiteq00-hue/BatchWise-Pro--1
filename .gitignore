@@ -35,3 +35,8 @@ frontend/.vite/
 
 # Wrangler
 .wrangler/
+
+# Desktop packaging
+desktop/bundle/
+desktop/release/
+desktop/node_modules/

@@ -14,6 +14,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as QaRouteImport } from './routes/qa'
 import { Route as ProductionRouteImport } from './routes/production'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DownloadRouteImport } from './routes/download'
 import { Route as CompanyPausedRouteImport } from './routes/company-paused'
 import { Route as AwaitingRoleRouteImport } from './routes/awaiting-role'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -51,6 +52,11 @@ const ProductionRoute = ProductionRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompanyPausedRoute = CompanyPausedRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
+  '/download': typeof DownloadRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
+  '/download': typeof DownloadRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
+  '/download': typeof DownloadRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/awaiting-role'
     | '/company-paused'
+    | '/download'
     | '/login'
     | '/production'
     | '/qa'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/awaiting-role'
     | '/company-paused'
+    | '/download'
     | '/login'
     | '/production'
     | '/qa'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/awaiting-role'
     | '/company-paused'
+    | '/download'
     | '/login'
     | '/production'
     | '/qa'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AwaitingRoleRoute: typeof AwaitingRoleRoute
   CompanyPausedRoute: typeof CompanyPausedRoute
+  DownloadRoute: typeof DownloadRoute
   LoginRoute: typeof LoginRoute
   ProductionRoute: typeof ProductionRouteWithChildren
   QaRoute: typeof QaRouteWithChildren
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/company-paused': {
@@ -443,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AwaitingRoleRoute: AwaitingRoleRoute,
   CompanyPausedRoute: CompanyPausedRoute,
+  DownloadRoute: DownloadRoute,
   LoginRoute: LoginRoute,
   ProductionRoute: ProductionRouteWithChildren,
   QaRoute: QaRouteWithChildren,

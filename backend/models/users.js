@@ -3,6 +3,7 @@ const { ROLES, DEPARTMENTS } = require("../config/roles");
 const firms = require("./firms");
 const { readCollection, writeCollection, createId } = require("./jsonStore");
 const { hashPassword } = require("../utils/password");
+const { hashResetToken } = require("../utils/resetToken");
 
 function normalizeEmail(email) {
   return String(email).trim().toLowerCase();
@@ -458,6 +459,34 @@ function teamMemberMissingDepartment(user) {
   return user.role === ROLES.TEAM_MEMBER && !user.department;
 }
 
+async function setPasswordReset(email, tokenHash, expiresAt) {
+  const user = await findByEmail(email);
+  if (!user) return null;
+  user.passwordResetToken = tokenHash;
+  user.passwordResetExpires = expiresAt;
+  return saveUser(user);
+}
+
+async function findByPasswordResetToken(token) {
+  const tokenHash = hashResetToken(token);
+  const all = await getAll();
+  return all.find((u) => u.passwordResetToken === tokenHash) ?? null;
+}
+
+async function updatePasswordAndClearReset(userId, password) {
+  const user = await findById(userId);
+  if (!user) return null;
+  user.passwordHash = await hashPassword(password);
+  delete user.passwordResetToken;
+  delete user.passwordResetExpires;
+  return saveUser(user);
+}
+
+function clearPasswordResetFields(user) {
+  delete user.passwordResetToken;
+  delete user.passwordResetExpires;
+}
+
 module.exports = {
   normalizeEmail,
   getAll,
@@ -483,4 +512,8 @@ module.exports = {
   listFirmAdmins,
   listTeamByFirm,
   removeTeamMember,
+  setPasswordReset,
+  findByPasswordResetToken,
+  updatePasswordAndClearReset,
+  clearPasswordResetFields,
 };

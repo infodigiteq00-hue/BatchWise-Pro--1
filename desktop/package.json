@@ -1,0 +1,54 @@
+{
+  "name": "batchwise-pro-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BatchWise Pro desktop app (Electron)",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "pack": "node ../scripts/prepare-desktop-bundle.mjs && electron-builder --dir",
+    "dist": "node ../scripts/prepare-desktop-bundle.mjs && electron-builder",
+    "dist:win": "node ../scripts/prepare-desktop-bundle.mjs && electron-builder --win",
+    "dist:mac": "node ../scripts/prepare-desktop-bundle.mjs && electron-builder --mac",
+    "dist:linux": "node ../scripts/prepare-desktop-bundle.mjs && electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.digiteq.batchwisepro",
+    "productName": "BatchWise Pro",
+    "directories": {
+      "output": "release"
+    },
+    "files": ["main.cjs"],
+    "extraResources": [
+      {
+        "from": "bundle",
+        "to": "bundle",
+        "filter": ["**/*"]
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "BatchWise-Pro-Windows-Setup.${ext}"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "artifactName": "BatchWise-Pro-macOS.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "artifactName": "BatchWise-Pro-Linux.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

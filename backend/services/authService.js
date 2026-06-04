@@ -2,12 +2,21 @@ const users = require("../models/users");
 const { ROLES, getDashboardForUser } = require("../config/roles");
 const { ROLE_NOT_ASSIGNED, ACCOUNT_INACTIVE } = require("../config/messages");
 const { MIN_PASSWORD_LENGTH } = require("../config/auth");
+const {
+  frontendUrl,
+  passwordResetExpiresMinutes,
+} = require("../config");
 const { comparePassword } = require("../utils/password");
 const { signToken } = require("../utils/jwt");
 const { toPublicUser } = require("../utils/userPublic");
+const { generateResetToken, hashResetToken } = require("../utils/resetToken");
+const { sendPasswordResetEmail } = require("./emailService");
 const {
   checkUserCompanyAccess,
 } = require("./companyAccess");
+
+const PASSWORD_RESET_SENT_MESSAGE =
+  "If an account exists for that email, password reset instructions have been sent.";
 
 function rejectMissingTeamDepartment(user) {
   if (!users.teamMemberMissingDepartment(user)) return;
@@ -146,6 +155,74 @@ async function login({ email, password }) {
   return authResponse(user, blocked);
 }
 
+function canSelfServePasswordReset(user) {
+  if (!user?.passwordHash) return false;
+  if (user.role === ROLES.SUPER_ADMIN) return true;
+  return user.status === "active";
+}
+
+async function requestPasswordReset({ email }) {
+  if (!email) {
+    const error = new Error("email is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const user = await users.findByEmail(email);
+  if (user && canSelfServePasswordReset(user)) {
+    const token = generateResetToken();
+    const tokenHash = hashResetToken(token);
+    const expiresAt = new Date(
+      Date.now() + passwordResetExpiresMinutes * 60 * 1000,
+    ).toISOString();
+    await users.setPasswordReset(user.email, tokenHash, expiresAt);
+
+    const resetUrl = `${frontendUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+    });
+  }
+
+  return { message: PASSWORD_RESET_SENT_MESSAGE };
+}
+
+async function resetPassword({ token, password }) {
+  if (!token || !password) {
+    const error = new Error("token and password are required");
+    error.status = 400;
+    throw error;
+  }
+  validatePassword(password);
+
+  const user = await users.findByPasswordResetToken(token);
+  if (!user || !user.passwordResetExpires) {
+    const error = new Error("Invalid or expired reset link");
+    error.status = 400;
+    throw error;
+  }
+
+  if (new Date(user.passwordResetExpires).getTime() < Date.now()) {
+    users.clearPasswordResetFields(user);
+    await users.saveUser(user);
+    const error = new Error("Invalid or expired reset link");
+    error.status = 400;
+    throw error;
+  }
+
+  if (!canSelfServePasswordReset(user)) {
+    const error = new Error("This account cannot reset its password");
+    error.status = 403;
+    throw error;
+  }
+
+  await users.updatePasswordAndClearReset(user.id, password);
+  return {
+    message: "Password updated. You can sign in with your new password.",
+  };
+}
+
 async function getMe(userId) {
   const user = await users.findById(userId);
   if (!user) {
@@ -177,4 +254,11 @@ async function getMe(userId) {
   };
 }
 
-module.exports = { signup, login, getMe, authResponse };
+module.exports = {
+  signup,
+  login,
+  getMe,
+  authResponse,
+  requestPasswordReset,
+  resetPassword,
+};

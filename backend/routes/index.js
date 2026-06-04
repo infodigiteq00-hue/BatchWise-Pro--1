@@ -14,6 +14,7 @@ const { authenticate } = require("../middleware/auth");
 const { requireActiveCompany } = require("../middleware/companyAccess");
 const { requireFirmId } = require("../middleware/firmScope");
 const { ROLES, DEPARTMENTS } = require("../config/roles");
+const { dataDir } = require("../config");
 const asyncHandler = require("../middleware/asyncHandler");
 
 function canReadBmr(user) {
@@ -44,7 +45,11 @@ function canReadSettings(user) {
 const router = express.Router();
 
 router.get("/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+    storage: "local-files",
+    dataDir,
+  });
 });
 
 router.use("/auth", auth);

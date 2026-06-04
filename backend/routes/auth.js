@@ -21,6 +21,22 @@ router.post(
   }),
 );
 
+router.post(
+  "/forgot-password",
+  asyncHandler(async (req, res) => {
+    const result = await authService.requestPasswordReset(req.body);
+    res.json(result);
+  }),
+);
+
+router.post(
+  "/reset-password",
+  asyncHandler(async (req, res) => {
+    const result = await authService.resetPassword(req.body);
+    res.json(result);
+  }),
+);
+
 router.get(
   "/me",
   authenticate,

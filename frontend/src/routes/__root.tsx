@@ -87,7 +87,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-const PUBLIC_PATHS = ["/login", "/signup", "/awaiting-role", "/company-paused"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/download",
+  "/forgot-password",
+  "/reset-password",
+  "/awaiting-role",
+  "/company-paused",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.includes(pathname);
@@ -98,7 +106,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const ssr = typeof window === "undefined";
     const { pathname } = location;
 
-    if (!ssr && (pathname === "/login" || pathname === "/signup")) {
+    if (
+      !ssr &&
+      (pathname === "/login" ||
+        pathname === "/signup" ||
+        pathname === "/download" ||
+        pathname === "/forgot-password" ||
+        pathname === "/reset-password")
+    ) {
       if (getAuthToken()) {
         try {
           const session = await tryGetSession();

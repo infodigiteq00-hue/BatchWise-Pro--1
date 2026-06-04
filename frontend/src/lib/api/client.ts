@@ -55,6 +55,22 @@ export async function apiFetch<T>(
   if (!res.ok) {
     const payload = data as { error?: string; code?: string };
     const message = payload.error || res.statusText || "Request failed";
+
+    if (res.status === 401 && typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const isAuthPage =
+        path.startsWith("/login") ||
+        path.startsWith("/signup") ||
+        path.startsWith("/forgot-password") ||
+        path.startsWith("/reset-password");
+      if (!isAuthPage) {
+        const { clearAuthSession } = await import("@/lib/authSession");
+        clearAuthSession();
+        const redirect = encodeURIComponent(path + window.location.search);
+        window.location.replace(`/login?expired=1&redirect=${redirect}`);
+      }
+    }
+
     throw new ApiError(message, res.status, payload.code);
   }
 

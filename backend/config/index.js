@@ -16,6 +16,9 @@ const dataDir = path.resolve(
 module.exports = {
   port: Number(process.env.PORT) || 3001,
   corsOrigin: process.env.CORS_ORIGIN || "*",
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:8080",
+  passwordResetExpiresMinutes:
+    Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES) || 60,
   jwtSecret: process.env.JWT_SECRET || "dev-secret-change-in-production",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   superAdmin: {

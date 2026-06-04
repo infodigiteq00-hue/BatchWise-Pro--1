@@ -49,6 +49,20 @@ export function signup(body: { name: string; email: string; password: string }) 
   });
 }
 
+export function forgotPassword(body: { email: string }) {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function resetPassword(body: { token: string; password: string }) {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function getMe() {
   return apiFetch<{
     user: Record<string, unknown>;

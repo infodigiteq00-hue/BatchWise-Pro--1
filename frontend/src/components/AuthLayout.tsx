@@ -36,6 +36,10 @@ export function AuthLayout({
           Login
         </Link>
         {" · "}
+        <Link to="/download" className="underline-offset-4 hover:underline">
+          Download app
+        </Link>
+        {" · "}
         <Link to="/signup" className="underline-offset-4 hover:underline">
           Sign up
         </Link>
