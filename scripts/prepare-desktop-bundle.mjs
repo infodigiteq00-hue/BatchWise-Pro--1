@@ -10,6 +10,12 @@ const backendBundle = path.join(bundleRoot, "backend");
 const uiBundle = path.join(bundleRoot, "ui");
 const uiRunner = path.join(bundleRoot, "ui-runner");
 const uiOutput = path.join(root, "frontend", ".vercel", "output");
+const uiServerEntry = path.join(
+  uiOutput,
+  "functions",
+  "__server.func",
+  "index.mjs",
+);
 
 const BACKEND_COPY = [
   "server.js",
@@ -43,9 +49,19 @@ function copyBackend() {
   }
 }
 
+function hasPrebuiltUi() {
+  return fs.existsSync(uiServerEntry);
+}
+
 console.log("Preparing desktop bundle…\n");
 
-if (!fs.existsSync(uiOutput) || process.env.CI) {
+if (!hasPrebuiltUi()) {
+  if (process.env.SKIP_UI_BUILD === "1") {
+    console.error(
+      "Prebuilt UI missing at frontend/.vercel/output — run the build-ui job first.",
+    );
+    process.exit(1);
+  }
   console.log("Building frontend for desktop (API → 127.0.0.1:39281)…");
   execSync("npm run build", {
     cwd: path.join(root, "frontend"),
@@ -57,7 +73,7 @@ if (!fs.existsSync(uiOutput) || process.env.CI) {
   });
 }
 
-if (!fs.existsSync(uiOutput)) {
+if (!hasPrebuiltUi()) {
   console.error("Missing frontend/.vercel/output — run frontend build first.");
   process.exit(1);
 }

@@ -9,7 +9,37 @@ permissions:
   contents: write
 
 jobs:
+  build-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend (once for all platforms)
+        working-directory: frontend
+        run: npm ci && npm run build
+        env:
+          CI: true
+          VITE_API_URL: http://127.0.0.1:39281/api
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Verify UI build output
+        run: test -f frontend/.vercel/output/functions/__server.func/index.mjs
+
+      - name: Upload UI build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-ui
+          path: frontend/.vercel/output
+          if-no-files-found: error
+
   build:
+    needs: build-ui
     strategy:
       fail-fast: false
       matrix:
@@ -30,41 +60,41 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
-            desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download prebuilt UI
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-ui
+          path: frontend/.vercel/output
 
       - name: Install Linux AppImage dependencies
         if: matrix.platform == 'linux'
-        run: sudo apt-get update && sudo apt-get install -y libfuse2 fuse3 file
-
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: frontend
-
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: backend
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fuse3 file
+          sudo apt-get install -y libfuse2t64 libfuse2 2>/dev/null || true
 
       - name: Install desktop dependencies
         run: npm ci
         working-directory: desktop
 
-      - name: Build desktop installers
+      - name: Build desktop installer
         run: npm run dist:${{ matrix.platform }}
         working-directory: desktop
         env:
           CI: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKIP_UI_BUILD: "1"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_API_URL: http://127.0.0.1:39281/api
 
       - name: List release output
-        run: dir release || ls -la release
+        run: ls -la release || dir release
         working-directory: desktop
         shell: bash
 
-      - name: Upload artifacts
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.platform }}
@@ -72,9 +102,9 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
+    needs: [build-ui, build]
     runs-on: ubuntu-latest
-    if: always() && needs.build.result != 'cancelled'
+    if: always() && needs.build-ui.result == 'success' && needs.build.result != 'cancelled'
 
     steps:
       - uses: actions/download-artifact@v4
@@ -84,15 +114,14 @@ jobs:
           merge-multiple: true
 
       - name: List downloaded artifacts
-        run: find artifacts -type f 2>/dev/null || dir /s artifacts
+        run: find artifacts -type f 2>/dev/null | head -50
 
       - name: Check for installer files
-        id: artifacts
         run: |
-          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' \) 2>/dev/null | wc -l)
-          echo "count=$count" >> "$GITHUB_OUTPUT"
+          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null | wc -l)
+          echo "Installer count: $count"
           if [ "$count" = "0" ]; then
-            echo "::error::No desktop installers were built. Open each failed matrix job log (win/mac/linux)."
+            echo "::error::No installers built. Open failed win/mac/linux jobs and read the log."
             exit 1
           fi
 
