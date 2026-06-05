@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -159,36 +160,40 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       always() &&
-      (needs.build-windows.result == 'success' ||
-       needs.build-mac.result == 'success' ||
-       needs.build-linux.result == 'success')
+      needs.build-windows.result == 'success' &&
+      needs.build-mac.result == 'success' &&
+      needs.build-linux.result == 'success'
 
     steps:
       - uses: actions/download-artifact@v4
-        if: needs.build-windows.result == 'success'
         with:
           name: desktop-win
           path: artifacts
 
       - uses: actions/download-artifact@v4
-        if: needs.build-mac.result == 'success'
         with:
           name: desktop-mac
           path: artifacts
 
       - uses: actions/download-artifact@v4
-        if: needs.build-linux.result == 'success'
         with:
           name: desktop-linux
           path: artifacts
 
-      - name: List installers
-        run: find artifacts -type f
+      - name: Verify all 3 installers
+        run: |
+          set -e
+          find artifacts -type f -name 'BatchWise-Pro-Windows-Setup.exe' | grep -q .
+          find artifacts -type f -name 'BatchWise-Pro-macOS.dmg' | grep -q .
+          find artifacts -type f -name 'BatchWise-Pro-Linux.zip' | grep -q .
+          echo "All platform installers found:"
+          find artifacts -type f
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: BatchWise Pro ${{ github.ref_name }}
+          fail_on_unmatched_files: true
           make_latest: true
           files: artifacts/**
         env:
