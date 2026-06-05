@@ -25,12 +25,12 @@ export const RELEASE_ARTIFACTS: Record<
   mac: {
     file: "BatchWise-Pro-macOS.dmg",
     label: "macOS",
-    hint: "macOS 11+ (Apple Silicon & Intel)",
+    hint: "macOS 11+ (Apple Silicon)",
   },
   linux: {
-    file: "BatchWise-Pro-Linux.AppImage",
+    file: "BatchWise-Pro-Linux.deb",
     label: "Linux",
-    hint: "AppImage (most distributions)",
+    hint: "Debian/Ubuntu 64-bit (.deb)",
   },
 };
 

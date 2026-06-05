@@ -53,23 +53,35 @@ function hasPrebuiltUi() {
   return fs.existsSync(uiServerEntry);
 }
 
+function run(cmd, cwd) {
+  execSync(cmd, { cwd, stdio: "inherit", env: process.env });
+}
+
 function installBackendBundleDeps() {
+  console.log("Installing backend production dependencies in bundle…");
   if (process.env.CI === "true") {
-    const srcMods = path.join(backendSrc, "node_modules");
-    if (!fs.existsSync(srcMods)) {
-      console.log("Installing backend deps in repo (CI)…");
-      execSync("npm ci --omit=dev", { cwd: backendSrc, stdio: "inherit" });
-    }
-    console.log("Copying backend node_modules into bundle…");
-    copyRecursive(srcMods, path.join(backendBundle, "node_modules"));
+    run("npm install --omit=dev --no-bin-links --no-audit --no-fund", backendBundle);
     return;
   }
+  run("npm ci --omit=dev", backendBundle);
+}
 
-  console.log("Installing backend production dependencies in bundle…");
-  execSync("npm ci --omit=dev", {
-    cwd: backendBundle,
-    stdio: "inherit",
-  });
+function installUiRunner() {
+  fs.mkdirSync(uiRunner, { recursive: true });
+  fs.writeFileSync(
+    path.join(uiRunner, "package.json"),
+    JSON.stringify(
+      {
+        name: "batchwise-ui-runner",
+        private: true,
+        type: "module",
+        dependencies: { srvx: "^0.11.15" },
+      },
+      null,
+      2,
+    ),
+  );
+  run("npm install --omit=dev --no-audit --no-fund", uiRunner);
 }
 
 console.log("Preparing desktop bundle…\n");
@@ -108,22 +120,6 @@ console.log("Copying UI build…");
 copyRecursive(uiOutput, uiBundle);
 
 console.log("Installing UI server (srvx)…");
-fs.mkdirSync(uiRunner, { recursive: true });
-fs.writeFileSync(
-  path.join(uiRunner, "package.json"),
-  JSON.stringify(
-    {
-      name: "batchwise-ui-runner",
-      private: true,
-      type: "module",
-      dependencies: {
-        srvx: "^0.11.15",
-      },
-    },
-    null,
-    2,
-  ),
-);
-execSync("npm install --omit=dev", { cwd: uiRunner, stdio: "inherit" });
+installUiRunner();
 
 console.log(`\nDesktop bundle ready: ${bundleRoot}`);

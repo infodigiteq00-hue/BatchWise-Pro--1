@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - "v*"
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,7 +20,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Build frontend (once for all platforms)
+      - name: Build frontend
         working-directory: frontend
         run: npm ci && npm run build
         env:
@@ -29,36 +28,20 @@ jobs:
           VITE_API_URL: http://127.0.0.1:39281/api
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Verify UI build output
+      - name: Verify UI output
         run: |
-          du -sh frontend/.vercel/output
           test -f frontend/.vercel/output/functions/__server.func/index.mjs
           test -d frontend/.vercel/output/static
-          ls frontend/.vercel/output/static | head -5
 
-      - name: Upload UI build
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: frontend-ui
           path: frontend/.vercel/output/
-          compression-level: 0
           if-no-files-found: error
 
-  build:
+  build-windows:
     needs: build-ui
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-          - os: macos-latest
-            platform: mac
-          - os: ubuntu-latest
-            platform: linux
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -66,101 +49,130 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: |
-            backend/package-lock.json
-            desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
 
-      - name: Download prebuilt UI
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: frontend-ui
-          path: _ui-artifact
+          path: frontend/.vercel/output
 
-      - name: Place UI into project tree
+      - name: Verify UI on disk
         shell: bash
-        run: |
-          rm -rf frontend/.vercel/output
-          mkdir -p frontend/.vercel/output
-          cp -a _ui-artifact/. frontend/.vercel/output/
-          du -sh frontend/.vercel/output
-          test -f frontend/.vercel/output/functions/__server.func/index.mjs
-          test -d frontend/.vercel/output/static
-          ls frontend/.vercel/output/static | head -3
+        run: test -f frontend/.vercel/output/functions/__server.func/index.mjs
 
-      - name: Install backend dependencies (for bundle)
-        run: npm ci --omit=dev
-        working-directory: backend
-
-      - name: Install Linux AppImage dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y fuse3 file rpm
-          sudo apt-get install -y libfuse2t64 2>/dev/null || sudo apt-get install -y libfuse2 2>/dev/null || true
-
-      - name: Install desktop dependencies
+      - name: Install desktop deps
         run: npm ci
         working-directory: desktop
 
-      - name: Build desktop installer
-        shell: bash
+      - name: Build Windows installer
         working-directory: desktop
-        run: |
-          set -euxo pipefail
-          npm run dist:${{ matrix.platform }}
+        run: npm run dist:win
         env:
           CI: true
           SKIP_UI_BUILD: "1"
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_API_URL: http://127.0.0.1:39281/api
 
-      - name: List release output
-        shell: bash
-        working-directory: desktop
-        run: ls -la release/
-
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.platform }}
-          path: desktop/release/*
+          name: desktop-win
+          path: desktop/release/BatchWise-Pro-Windows-Setup.exe
+          if-no-files-found: error
+
+  build-mac:
+    needs: build-ui
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-ui
+          path: frontend/.vercel/output
+
+      - name: Verify UI on disk
+        run: test -f frontend/.vercel/output/functions/__server.func/index.mjs
+
+      - name: Install desktop deps
+        run: npm ci
+        working-directory: desktop
+
+      - name: Build macOS installer
+        working-directory: desktop
+        run: npm run dist:mac
+        env:
+          CI: true
+          SKIP_UI_BUILD: "1"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-mac
+          path: desktop/release/BatchWise-Pro-macOS.dmg
+          if-no-files-found: error
+
+  build-linux:
+    needs: build-ui
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-ui
+          path: frontend/.vercel/output
+
+      - name: Verify UI on disk
+        run: test -f frontend/.vercel/output/functions/__server.func/index.mjs
+
+      - name: Install desktop deps
+        run: npm ci
+        working-directory: desktop
+
+      - name: Build Linux package
+        working-directory: desktop
+        run: npm run dist:linux
+        env:
+          CI: true
+          SKIP_UI_BUILD: "1"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: desktop/release/BatchWise-Pro-Linux.deb
           if-no-files-found: error
 
   release:
-    needs: [build-ui, build]
+    needs: [build-windows, build-mac, build-linux]
     runs-on: ubuntu-latest
-    if: always() && needs.build-ui.result == 'success' && needs.build.result != 'cancelled'
+    if: always() && needs.build-windows.result == 'success' && needs.build-mac.result == 'success' && needs.build-linux.result == 'success'
 
     steps:
       - uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           pattern: desktop-*
           path: artifacts
           merge-multiple: true
 
-      - name: List downloaded artifacts
-        run: find artifacts -type f 2>/dev/null | head -50 || echo "no artifacts dir"
+      - name: List installers
+        run: find artifacts -type f
 
-      - name: Check for installer files
-        id: check
-        run: |
-          count=$(find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null | wc -l | tr -d ' ')
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          find artifacts -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' \) 2>/dev/null || true
-          if [ "$count" = "0" ]; then
-            echo "::warning::No CI installers — release may already have manual uploads."
-            exit 0
-          fi
-
-      - name: Publish GitHub Release
-        if: steps.check.outputs.count != '0'
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: BatchWise Pro ${{ github.ref_name }}
-          allowUpdates: true
           make_latest: true
           files: artifacts/**
         env:
