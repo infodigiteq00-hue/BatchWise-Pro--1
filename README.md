@@ -105,7 +105,7 @@ The login page includes **Download desktop app** for installers built with **Git
 ### End users
 
 1. Open `/download` in the web app (or use the link on the login page).
-2. Download the installer for your OS (Windows `.exe`, macOS `.dmg`, Linux `.AppImage`).
+2. Download the installer for your OS (Windows `.exe`, macOS `.dmg`, Linux `.zip`).
 3. Install and open **BatchWise Pro** — the app starts the local API and UI automatically.
 4. Data is stored under your user profile (see app data folder), not in the cloud.
 
