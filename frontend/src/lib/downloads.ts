@@ -28,9 +28,9 @@ export const RELEASE_ARTIFACTS: Record<
     hint: "macOS 11+ (Apple Silicon)",
   },
   linux: {
-    file: "BatchWise-Pro-Linux.deb",
+    file: "BatchWise-Pro-Linux.zip",
     label: "Linux",
-    hint: "Debian/Ubuntu 64-bit (.deb)",
+    hint: "64-bit ZIP (extract and run)",
   },
 };
 

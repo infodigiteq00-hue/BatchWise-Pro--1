@@ -151,20 +151,36 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-linux
-          path: desktop/release/BatchWise-Pro-Linux.deb
+          path: desktop/release/BatchWise-Pro-Linux.zip
           if-no-files-found: error
 
   release:
     needs: [build-windows, build-mac, build-linux]
     runs-on: ubuntu-latest
-    if: always() && needs.build-windows.result == 'success' && needs.build-mac.result == 'success' && needs.build-linux.result == 'success'
+    if: >-
+      always() &&
+      (needs.build-windows.result == 'success' ||
+       needs.build-mac.result == 'success' ||
+       needs.build-linux.result == 'success')
 
     steps:
       - uses: actions/download-artifact@v4
+        if: needs.build-windows.result == 'success'
         with:
-          pattern: desktop-*
+          name: desktop-win
           path: artifacts
-          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        if: needs.build-mac.result == 'success'
+        with:
+          name: desktop-mac
+          path: artifacts
+
+      - uses: actions/download-artifact@v4
+        if: needs.build-linux.result == 'success'
+        with:
+          name: desktop-linux
+          path: artifacts
 
       - name: List installers
         run: find artifacts -type f
