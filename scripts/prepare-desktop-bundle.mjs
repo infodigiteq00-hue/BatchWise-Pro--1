@@ -119,6 +119,37 @@ installBackendBundleDeps();
 console.log("Copying UI build…");
 copyRecursive(uiOutput, uiBundle);
 
+const controlApiUrl = (
+  process.env.CONTROL_API_URL ||
+  process.env.VITE_CONTROL_API_URL ||
+  ""
+)
+  .trim()
+  .replace(/\/$/, "");
+
+fs.writeFileSync(
+  path.join(bundleRoot, "control-config.json"),
+  JSON.stringify(
+    {
+      appMode: controlApiUrl ? "hybrid" : "full",
+      controlApiUrl: controlApiUrl || null,
+    },
+    null,
+    2,
+  ),
+);
+
+if (controlApiUrl) {
+  console.log("Hybrid desktop bundle — control API:", controlApiUrl);
+} else {
+  console.warn(
+    "CONTROL_API_URL not set — desktop will run in local-only mode (pause will not sync across machines).",
+  );
+  console.warn(
+    "Set CONTROL_API_URL when building installers, e.g. CONTROL_API_URL=https://api.yourdomain.com/api npm run dist:desktop:win",
+  );
+}
+
 console.log("Installing UI server (srvx)…");
 installUiRunner();
 

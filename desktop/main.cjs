@@ -42,6 +42,18 @@ function srvxCliPath(root) {
   return candidates.find((p) => fs.existsSync(p)) ?? candidates[0];
 }
 
+function readControlConfig() {
+  const configPath = path.join(bundleRoot(), "control-config.json");
+  try {
+    if (fs.existsSync(configPath)) {
+      return JSON.parse(fs.readFileSync(configPath, "utf8"));
+    }
+  } catch (err) {
+    log("Could not read control-config.json:", err?.message ?? err);
+  }
+  return { appMode: "full", controlApiUrl: null };
+}
+
 function ensureJwtSecret() {
   let secret = store.get("jwtSecret");
   if (!secret) {
@@ -122,14 +134,25 @@ async function startBackend() {
   const dataDir = path.join(userData, "data");
   fs.mkdirSync(dataDir, { recursive: true });
 
-  backendProc = spawnNode(serverJs, backendDir, {
+  const control = readControlConfig();
+  const backendEnv = {
     PORT: String(API_PORT),
     HOST: "127.0.0.1",
     DATA_DIR: dataDir,
     CORS_ORIGIN: UI_ORIGIN,
     FRONTEND_URL: UI_ORIGIN,
     JWT_SECRET: ensureJwtSecret(),
-  }, "api");
+  };
+
+  if (control.controlApiUrl) {
+    backendEnv.APP_MODE = "hybrid";
+    backendEnv.CONTROL_API_URL = control.controlApiUrl;
+    log("Hybrid mode — control API:", control.controlApiUrl);
+  } else {
+    log("Local-only mode — CONTROL_API_URL not configured in bundle");
+  }
+
+  backendProc = spawnNode(serverJs, backendDir, backendEnv, "api");
 
   await waitForHealth(API_ORIGIN);
 }

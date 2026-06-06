@@ -24,7 +24,7 @@ function DownloadPage() {
   return (
     <AuthLayout
       title="Download desktop app"
-      subtitle="Install BatchWise Pro on your computer. All data stays on your machine in a local folder."
+      subtitle="Install on your PC. BMR data stays on your machine — account login and pause are checked with Digiteq online."
     >
       <div className="space-y-4">
         {detected !== "unknown" && (
@@ -45,9 +45,10 @@ function DownloadPage() {
         </div>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Installers are built automatically with GitHub Actions when a new
-          version is released. After installing, open the app and sign in — no
-          separate server setup required.
+          Sign in with the same email and password you use in the browser. Your
+          templates and BMR files are saved locally on this computer. If your
+          account is paused by Digiteq, the app will stop working here too
+          (internet required at sign-in).
         </p>
 
         <p className="text-center text-sm text-muted-foreground">

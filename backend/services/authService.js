@@ -65,7 +65,9 @@ function validatePassword(password) {
 
 function rejectInactiveAccount(user) {
   if (user.role === ROLES.SUPER_ADMIN) return;
-  if (user.status === "inactive" || user.status === "paused") {
+  // Paused accounts may still sign in — checkUserCompanyAccess returns accessBlocked.
+  if (user.status === "paused") return;
+  if (user.status === "inactive") {
     const error = new Error(ACCOUNT_INACTIVE);
     error.status = 403;
     error.code = "ACCOUNT_INACTIVE";

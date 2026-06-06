@@ -136,9 +136,82 @@ cd desktop && npm install && npm run dist:win   # or dist:mac / dist:linux
 
 Output: `desktop/release/`
 
-## Optional: cloud deployment
+## Hybrid model (Digiteq control + local BMR data)
 
-The same codebase can be deployed to hosts such as Render (API) and Vercel (frontend) by setting environment variables on those platforms. That is optional; **local install is the default workflow** described above.
+For production (Cursor-style): **login and pause on Digiteq’s server**, **BMR/PDF data on each user’s PC**.
+
+| What | Where |
+|------|--------|
+| Super admin, accounts, pause/active | **Control server** (this API deployed online, `APP_MODE=full`) |
+| Templates, BMR requests, PDFs | **User’s PC** (desktop app, `APP_MODE=hybrid`) |
+
+### 1. Deploy the control server (once)
+
+Deploy `backend/` to Render, Railway, a VPS, etc. Example env:
+
+```env
+APP_MODE=full
+PORT=3001
+DATA_DIR=/data
+JWT_SECRET=<long-random-string>
+SUPER_ADMIN_EMAIL=...
+SUPER_ADMIN_PASSWORD=...
+CORS_ORIGIN=https://app.batchwisepro.com,http://localhost:8080
+FRONTEND_URL=https://app.batchwisepro.com
+```
+
+Deploy `frontend/` to Vercel (or similar) with:
+
+```env
+VITE_API_URL=https://api.batchwisepro.com/api
+```
+
+Super admin uses this web app. Firm users use it to **sign in** and **download** the desktop installer.
+
+### 2. Build desktop installers (hybrid)
+
+Bake the control API URL into the installer:
+
+```bash
+CONTROL_API_URL=https://api.batchwisepro.com/api npm run dist:desktop:win
+```
+
+Or set GitHub Actions variable **`CONTROL_API_URL`** before tagging a release (see `.github/workflows/release-desktop.yml`).
+
+The desktop app then:
+
+1. Stores BMR data under the user’s AppData / profile folder (`DATA_DIR`).
+2. Proxies **login**, **signup**, and **team invites** to the control server.
+3. Re-checks **pause/active** with the control server (cached ~90s) on each API call.
+4. Blocks all BMR routes when the account or company is paused — even on the local PC.
+
+### 3. Test hybrid mode locally (pause sync)
+
+One command (control on :3001, hybrid desktop API on :3002):
+
+```bash
+npm run dev:control+hybrid
+```
+
+In another terminal, point the UI at the hybrid API:
+
+```env
+# frontend/.env.local
+VITE_API_URL=http://localhost:3002/api
+```
+
+Then `npm run dev:web`. Super admin pauses a company on **http://localhost:8080** with `VITE_API_URL=http://localhost:3001/api` (control). The hybrid session on :3002 shows **Dashboard paused** on next login or navigation (internet to control server required).
+
+### Flow for end users
+
+1. Browser → sign in on Digiteq web app (control server).
+2. Download desktop app → install.
+3. Same email/password in the app → BMR work saved locally.
+4. Super admin **pauses** company → next login or API check → app shows “Dashboard paused” on that PC too (internet required).
+
+## Optional: fully local deployment
+
+The setup at the top of this README (`npm run dev`) keeps everything on one machine with no control server. Use that for development only; production desktop releases should set `CONTROL_API_URL`.
 
 ## Troubleshooting
 
@@ -148,3 +221,5 @@ The same codebase can be deployed to hosts such as Render (API) and Vercel (fron
 | UI cannot reach API | Confirm `VITE_API_URL=http://localhost:3001/api` and that `npm run dev:api` is running |
 | Session expired after restart | Sign in again (normal if the API was restarted) |
 | CORS errors | Add your UI origin to `CORS_ORIGIN` in `backend/.env` (defaults include `http://localhost:8080`) |
+| Desktop pause not working | Rebuild installer with `CONTROL_API_URL` pointing at your online control API |
+| “Cannot reach control server” | User needs internet; verify `CONTROL_API_URL` in the installer matches your deployed API |

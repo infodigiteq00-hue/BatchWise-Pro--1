@@ -53,8 +53,45 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const payload = data as { error?: string; code?: string };
+    const payload = data as {
+      error?: string;
+      code?: string;
+      accessBlocked?: {
+        reason: string;
+        message: string;
+        firmId?: string;
+        companyName?: string;
+      };
+    };
     const message = payload.error || res.statusText || "Request failed";
+
+    if (res.status === 403 && typeof window !== "undefined" && payload.accessBlocked) {
+      const path = window.location.pathname;
+      const isAuthPage =
+        path.startsWith("/login") ||
+        path.startsWith("/signup") ||
+        path.startsWith("/forgot-password") ||
+        path.startsWith("/reset-password");
+      if (!isAuthPage && path !== "/company-paused") {
+        const { getCachedDashboard, getCachedUser, setCachedSessionFromMe } =
+          await import("@/lib/authSession");
+        const dashboard = getCachedDashboard();
+        const user = getCachedUser();
+        setCachedSessionFromMe({
+          user: (user ?? {}) as Record<string, unknown>,
+          dashboard: {
+            role: dashboard?.role ?? user?.role ?? "team_member",
+            department: dashboard?.department ?? user?.department,
+            firmId: dashboard?.firmId,
+            tabs: [],
+            defaultTab: null,
+            homePath: "/company-paused",
+          },
+          accessBlocked: payload.accessBlocked,
+        });
+        window.location.replace("/company-paused");
+      }
+    }
 
     if (res.status === 401 && typeof window !== "undefined") {
       const path = window.location.pathname;

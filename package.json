@@ -9,6 +9,8 @@
     "dev": "concurrently -k -n api,web -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "dev:api": "npm run dev --prefix backend",
     "dev:web": "npm run dev --prefix frontend",
+    "dev:hybrid": "node scripts/dev-hybrid.mjs",
+    "dev:control+hybrid": "concurrently -k -n control,hybrid -c blue,magenta \"npm run dev --prefix backend\" \"npm run dev:hybrid\"",
     "start:api": "npm run start --prefix backend",
     "build:web": "npm run build --prefix frontend",
     "preview:web": "npm run preview --prefix frontend",

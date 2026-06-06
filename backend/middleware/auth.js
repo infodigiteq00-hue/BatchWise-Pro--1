@@ -2,6 +2,7 @@ const { verifyToken } = require("../utils/jwt");
 const users = require("../models/users");
 const { toPublicUser } = require("../utils/userPublic");
 const asyncHandler = require("./asyncHandler");
+const { isHybridMode, resolveControlSession } = require("../services/controlApiClient");
 
 function extractBearerToken(req) {
   const header = req.headers.authorization;
@@ -18,6 +19,44 @@ async function authenticate(req, res, next) {
     return res.status(401).json({ error: "Authentication required" });
   }
 
+  if (isHybridMode()) {
+    try {
+      const session = await resolveControlSession(token);
+      if (!session?.user) {
+        return res.status(401).json({
+          error: "Invalid or expired session",
+          code: "SESSION_INVALID",
+        });
+      }
+      if (session.user.role !== "super_admin") {
+        const { status } = session.user;
+        if (status === "inactive") {
+          return res.status(401).json({
+            error: "Invalid or expired session",
+            code: "SESSION_INVALID",
+          });
+        }
+        if (status !== "active" && status !== "paused") {
+          return res.status(401).json({
+            error: "Invalid or expired session",
+            code: "SESSION_INVALID",
+          });
+        }
+      }
+      req.user = session.user;
+      req.accessBlocked = session.accessBlocked ?? null;
+      req.auth = {
+        sub: session.user.id,
+        role: session.user.role,
+        department: session.user.department,
+        firmId: session.user.firmId,
+      };
+      return next();
+    } catch {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+  }
+
   try {
     const payload = verifyToken(token);
     const user = await users.findById(payload.sub);
@@ -27,11 +66,19 @@ async function authenticate(req, res, next) {
         code: "SESSION_INVALID",
       });
     }
-    if (user.role !== "super_admin" && user.status !== "active") {
-      return res.status(401).json({
-        error: "Invalid or expired session",
-        code: "SESSION_INVALID",
-      });
+    if (user.role !== "super_admin") {
+      if (user.status === "inactive") {
+        return res.status(401).json({
+          error: "Invalid or expired session",
+          code: "SESSION_INVALID",
+        });
+      }
+      if (user.status !== "active" && user.status !== "paused") {
+        return res.status(401).json({
+          error: "Invalid or expired session",
+          code: "SESSION_INVALID",
+        });
+      }
     }
     req.user = user;
     req.auth = payload;

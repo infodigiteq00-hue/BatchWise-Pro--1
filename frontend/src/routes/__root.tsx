@@ -29,6 +29,7 @@ import {
   getHomePathFromDashboard,
   isCompanyAccessBlocked,
 } from "@/lib/authSession";
+import { CompanyAccessGuard } from "@/components/CompanyAccessGuard";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +119,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         try {
           const session = await tryGetSession();
           if (session) {
+            if (session.accessBlocked || isCompanyAccessBlocked()) {
+              throw redirect({ to: "/company-paused" });
+            }
             throw redirect({
               to: getHomePathFromDashboard(session.dashboard),
             });
@@ -251,6 +255,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <CompanyAccessGuard />
       <Outlet />
     </QueryClientProvider>
   );

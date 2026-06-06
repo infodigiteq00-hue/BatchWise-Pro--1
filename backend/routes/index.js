@@ -14,7 +14,8 @@ const { authenticate } = require("../middleware/auth");
 const { requireActiveCompany } = require("../middleware/companyAccess");
 const { requireFirmId } = require("../middleware/firmScope");
 const { ROLES, DEPARTMENTS } = require("../config/roles");
-const { dataDir } = require("../config");
+const { dataDir, appMode, controlApiUrl } = require("../config");
+const { isHybridMode } = require("../services/controlApiClient");
 const asyncHandler = require("../middleware/asyncHandler");
 
 function canReadBmr(user) {
@@ -47,13 +48,26 @@ const router = express.Router();
 router.get("/health", (_req, res) => {
   res.json({
     ok: true,
+    mode: appMode,
     storage: "local-files",
     dataDir,
+    controlApiUrl: isHybridMode() ? controlApiUrl : null,
   });
 });
 
 router.use("/auth", auth);
-router.use("/super-admin", superAdmin);
+
+if (isHybridMode()) {
+  router.use("/super-admin", (_req, res) => {
+    res.status(403).json({
+      error:
+        "Super admin is only available on the online control server. Open the web portal in your browser.",
+      code: "SUPER_ADMIN_ONLINE_ONLY",
+    });
+  });
+} else {
+  router.use("/super-admin", superAdmin);
+}
 router.use("/teams", teams);
 
 router.get(

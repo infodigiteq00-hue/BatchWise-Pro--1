@@ -13,7 +13,17 @@ const dataDir = path.resolve(
   process.env.DATA_DIR || "./data",
 );
 
+const appMode = process.env.APP_MODE || "full";
+const controlApiUrl = (process.env.CONTROL_API_URL || "").trim().replace(
+  /\/$/,
+  "",
+);
+
 module.exports = {
+  appMode,
+  controlApiUrl: controlApiUrl || null,
+  controlSessionCacheMs:
+    Number(process.env.CONTROL_SESSION_CACHE_MS) || 90_000,
   port: Number(process.env.PORT) || 3001,
   corsOrigin: process.env.CORS_ORIGIN || "*",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:8080",
