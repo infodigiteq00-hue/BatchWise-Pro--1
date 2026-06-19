@@ -1,7 +1,8 @@
-const { files, superAdmin } = require("../config");
+const { superAdmin } = require("../config");
 const { ROLES, DEPARTMENTS } = require("../config/roles");
 const firms = require("./firms");
-const { readCollection, writeCollection, createId } = require("./jsonStore");
+const { createId } = require("./jsonStore");
+const controlStore = require("./controlStore");
 const { hashPassword } = require("../utils/password");
 const { hashResetToken } = require("../utils/resetToken");
 
@@ -16,7 +17,7 @@ const {
 } = firms;
 
 async function getAll() {
-  return readCollection(files.users, []);
+  return controlStore.readUsers();
 }
 
 async function findByEmail(email) {
@@ -38,7 +39,7 @@ async function saveUser(user) {
   } else {
     users[index] = user;
   }
-  await writeCollection(files.users, users);
+  await controlStore.writeUsers(users);
   return user;
 }
 
@@ -82,7 +83,7 @@ async function syncSuperAdminFromEnv() {
     users[idx].status = "active";
   }
 
-  await writeCollection(files.users, users);
+  await controlStore.writeUsers(users);
   return users.find((u) => u.role === ROLES.SUPER_ADMIN);
 }
 
@@ -114,7 +115,7 @@ async function syncFirmAdminFirmLinks() {
     }
   }
 
-  if (changed) await writeCollection(files.users, all);
+  if (changed) await controlStore.writeUsers(all);
 }
 
 async function syncTeamMemberCompanyNames() {
@@ -131,7 +132,7 @@ async function syncTeamMemberCompanyNames() {
       changed = true;
     }
   }
-  if (changed) await writeCollection(files.users, all);
+  if (changed) await controlStore.writeUsers(all);
 }
 
 async function sanitizeTeamMemberDepartments() {
@@ -145,7 +146,7 @@ async function sanitizeTeamMemberDepartments() {
       changed = true;
     }
   }
-  if (changed) await writeCollection(files.users, users);
+  if (changed) await controlStore.writeUsers(users);
 }
 
 async function resolveCompanyNameForFirm(firmId, preferred) {
@@ -285,7 +286,7 @@ async function removeFirmAdmin(id) {
   const firmId = user.firmId;
   const all = await getAll();
   const next = all.filter((u) => u.id !== id);
-  await writeCollection(files.users, next);
+  await controlStore.writeUsers(next);
 
   if (firmId) {
     const remaining = next.filter((u) => u.firmId === firmId);
@@ -316,7 +317,7 @@ async function listFirmAdminsWithStats() {
 }
 
 async function writeAll(users) {
-  await writeCollection(files.users, users);
+  await controlStore.writeUsers(users);
 }
 
 async function activateFirmAdmin(email, password, firmId, name) {
@@ -451,7 +452,7 @@ async function removeTeamMember(id, firmId) {
   }
   const users = await getAll();
   const next = users.filter((u) => u.id !== id);
-  await writeCollection(files.users, next);
+  await controlStore.writeUsers(next);
   return true;
 }
 

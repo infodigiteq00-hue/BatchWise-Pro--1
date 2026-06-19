@@ -6,12 +6,14 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "migrate:supabase": "node scripts/migrate-json-to-supabase.js",
     "stop": "powershell -NoProfile -Command \"$p=(Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess; if ($p) { Stop-Process -Id $p -Force; Write-Host ('Stopped process ' + $p + ' on port 3001') } else { Write-Host 'No process listening on port 3001' }\""
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

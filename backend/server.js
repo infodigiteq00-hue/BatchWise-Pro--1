@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const { port, corsOrigin, appMode, controlApiUrl } = require("./config");
+const { isSupabaseEnabled } = require("./db/supabase");
 const host = process.env.HOST || "0.0.0.0";
 const { bootstrap } = require("./bootstrap");
 const apiRoutes = require("./routes");
@@ -66,8 +67,11 @@ async function startServer() {
         appMode === "hybrid" && controlApiUrl
           ? `hybrid → control ${controlApiUrl}`
           : appMode;
+      const controlLabel = isSupabaseEnabled()
+        ? "control-plane: supabase"
+        : "control-plane: json";
       console.log(
-        `BatchWise Pro API listening on http://${label}:${port} (${modeLabel})`,
+        `BatchWise Pro API listening on http://${label}:${port} (${modeLabel}, ${controlLabel})`,
       );
       resolve(server);
     });

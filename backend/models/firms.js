@@ -1,12 +1,12 @@
-const { files } = require("../config");
-const { readCollection, writeCollection, createId } = require("./jsonStore");
+const { createId } = require("./jsonStore");
+const controlStore = require("./controlStore");
 
 async function getAllUsers() {
-  return readCollection(files.users, []);
+  return controlStore.readUsers();
 }
 
 async function writeAllUsers(users) {
-  await writeCollection(files.users, users);
+  await controlStore.writeUsers(users);
 }
 
 const VALID_STATUSES = ["active", "inactive", "paused"];
@@ -29,11 +29,7 @@ async function findByCompanyName(companyName) {
 }
 
 async function getAll() {
-  const firms = await readCollection(files.firms, []);
-  return firms.map((f) => ({
-    status: "active",
-    ...f,
-  }));
+  return controlStore.readFirms();
 }
 
 async function getById(id) {
@@ -46,7 +42,7 @@ async function create(companyName, status = "active") {
   const existing = await findByCompanyName(name);
   if (existing) return existing;
 
-  const firms = await readCollection(files.firms, []);
+  const firms = await getAll();
   const entry = {
     id: createId(),
     companyName: name,
@@ -54,12 +50,12 @@ async function create(companyName, status = "active") {
     createdAt: new Date().toISOString(),
   };
   firms.push(entry);
-  await writeCollection(files.firms, firms);
+  await controlStore.writeFirms(firms);
   return entry;
 }
 
 async function update(id, patch) {
-  const firms = await readCollection(files.firms, []);
+  const firms = await getAll();
   const index = firms.findIndex((f) => f.id === id);
   if (index === -1) return null;
   if (patch.companyName !== undefined) {
@@ -68,15 +64,15 @@ async function update(id, patch) {
   if (patch.status !== undefined && VALID_STATUSES.includes(patch.status)) {
     firms[index].status = patch.status;
   }
-  await writeCollection(files.firms, firms);
+  await controlStore.writeFirms(firms);
   return firms[index];
 }
 
 async function remove(id) {
-  const firms = await readCollection(files.firms, []);
+  const firms = await getAll();
   const next = firms.filter((f) => f.id !== id);
   if (next.length === firms.length) return false;
-  await writeCollection(files.firms, next);
+  await controlStore.writeFirms(next);
 
   const allUsers = await getAllUsers();
   const remaining = allUsers.filter((u) => u.firmId !== id);

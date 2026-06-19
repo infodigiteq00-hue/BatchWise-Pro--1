@@ -21,6 +21,7 @@ const BACKEND_COPY = [
   "server.js",
   "bootstrap.js",
   "config",
+  "db",
   "middleware",
   "models",
   "routes",

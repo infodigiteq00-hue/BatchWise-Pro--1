@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as QaRouteImport } from './routes/qa'
 import { Route as ProductionRouteImport } from './routes/production'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as CompanyPausedRouteImport } from './routes/company-paused'
 import { Route as AwaitingRoleRouteImport } from './routes/awaiting-role'
@@ -39,6 +41,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QaRoute = QaRouteImport.update({
   id: '/qa',
   path: '/qa',
@@ -52,6 +59,11 @@ const ProductionRoute = ProductionRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -131,9 +143,11 @@ export interface FileRoutesByFullPath {
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
   '/download': typeof DownloadRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/admin/signatures': typeof AdminSignaturesRoute
@@ -152,9 +166,11 @@ export interface FileRoutesByTo {
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
   '/download': typeof DownloadRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin/signatures': typeof AdminSignaturesRoute
   '/admin/teams': typeof AdminTeamsRoute
@@ -173,9 +189,11 @@ export interface FileRoutesById {
   '/awaiting-role': typeof AwaitingRoleRoute
   '/company-paused': typeof CompanyPausedRoute
   '/download': typeof DownloadRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/production': typeof ProductionRouteWithChildren
   '/qa': typeof QaRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/super-admin': typeof SuperAdminRouteWithChildren
   '/admin/signatures': typeof AdminSignaturesRoute
@@ -196,9 +214,11 @@ export interface FileRouteTypes {
     | '/awaiting-role'
     | '/company-paused'
     | '/download'
+    | '/forgot-password'
     | '/login'
     | '/production'
     | '/qa'
+    | '/reset-password'
     | '/signup'
     | '/super-admin'
     | '/admin/signatures'
@@ -217,9 +237,11 @@ export interface FileRouteTypes {
     | '/awaiting-role'
     | '/company-paused'
     | '/download'
+    | '/forgot-password'
     | '/login'
     | '/production'
     | '/qa'
+    | '/reset-password'
     | '/signup'
     | '/admin/signatures'
     | '/admin/teams'
@@ -237,9 +259,11 @@ export interface FileRouteTypes {
     | '/awaiting-role'
     | '/company-paused'
     | '/download'
+    | '/forgot-password'
     | '/login'
     | '/production'
     | '/qa'
+    | '/reset-password'
     | '/signup'
     | '/super-admin'
     | '/admin/signatures'
@@ -259,9 +283,11 @@ export interface RootRouteChildren {
   AwaitingRoleRoute: typeof AwaitingRoleRoute
   CompanyPausedRoute: typeof CompanyPausedRoute
   DownloadRoute: typeof DownloadRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ProductionRoute: typeof ProductionRouteWithChildren
   QaRoute: typeof QaRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   SuperAdminRoute: typeof SuperAdminRouteWithChildren
 }
@@ -280,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/qa': {
@@ -301,6 +334,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -464,9 +504,11 @@ const rootRouteChildren: RootRouteChildren = {
   AwaitingRoleRoute: AwaitingRoleRoute,
   CompanyPausedRoute: CompanyPausedRoute,
   DownloadRoute: DownloadRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ProductionRoute: ProductionRouteWithChildren,
   QaRoute: QaRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   SuperAdminRoute: SuperAdminRouteWithChildren,
 }
