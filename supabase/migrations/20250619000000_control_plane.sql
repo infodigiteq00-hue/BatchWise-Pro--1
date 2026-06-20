@@ -1,5 +1,5 @@
 -- Control-plane tables for super admin (users, firms, pause status).
--- BMR operational data (templates, requests, PDFs) stays on local disk in hybrid mode.
+-- BMR operational data: see 20250619100000_operational_data.sql (browser/online only).
 
 CREATE TABLE IF NOT EXISTS public.firms (
   id TEXT PRIMARY KEY,

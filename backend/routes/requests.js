@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require("path");
 const requests = require("../models/requests");
 const { authenticate } = require("../middleware/auth");
 const { requireActiveCompany } = require("../middleware/companyAccess");
@@ -50,7 +49,8 @@ router.get(
       "Content-Disposition",
       `${download ? "attachment" : "inline"}; filename="${safeName}.pdf"`,
     );
-    res.sendFile(path.resolve(requests.getStampedPdfPath(item.id)));
+    const buf = await requests.readStampedPdfBuffer(item.id);
+    res.send(buf);
   }),
 );
 

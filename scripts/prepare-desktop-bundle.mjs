@@ -87,13 +87,9 @@ function installUiRunner() {
 
 console.log("Preparing desktop bundle…\n");
 
-if (!hasPrebuiltUi()) {
-  if (process.env.SKIP_UI_BUILD === "1") {
-    console.error(
-      "Prebuilt UI missing at frontend/.vercel/output — run the build-ui job first.",
-    );
-    process.exit(1);
-  }
+const skipUiBuild = process.env.SKIP_UI_BUILD === "1";
+
+if (!skipUiBuild) {
   console.log("Building frontend for desktop (API → 127.0.0.1:39281)…");
   execSync("npm run build", {
     cwd: path.join(root, "frontend"),
@@ -103,6 +99,11 @@ if (!hasPrebuiltUi()) {
       VITE_API_URL: "http://127.0.0.1:39281/api",
     },
   });
+} else if (!hasPrebuiltUi()) {
+  console.error(
+    "Prebuilt UI missing at frontend/.vercel/output — run the build-ui job first.",
+  );
+  process.exit(1);
 }
 
 if (!hasPrebuiltUi()) {

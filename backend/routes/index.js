@@ -16,7 +16,10 @@ const { requireFirmId } = require("../middleware/firmScope");
 const { ROLES, DEPARTMENTS } = require("../config/roles");
 const { dataDir, appMode, controlApiUrl } = require("../config");
 const { isHybridMode } = require("../services/controlApiClient");
-const { isSupabaseEnabled } = require("../db/supabase");
+const {
+  useCloudControlStore,
+  useCloudOperationalStore,
+} = require("../db/storageMode");
 const asyncHandler = require("../middleware/asyncHandler");
 
 function canReadBmr(user) {
@@ -47,11 +50,13 @@ function canReadSettings(user) {
 const router = express.Router();
 
 router.get("/health", (_req, res) => {
+  const cloud = useCloudOperationalStore();
   res.json({
     ok: true,
     mode: appMode,
-    storage: "local-files",
-    controlPlane: isSupabaseEnabled() ? "supabase" : "json",
+    storage: cloud ? "supabase" : "local-files",
+    controlPlane: useCloudControlStore() ? "supabase" : "json",
+    operationalStore: cloud ? "supabase" : "local",
     dataDir,
     controlApiUrl: isHybridMode() ? controlApiUrl : null,
   });

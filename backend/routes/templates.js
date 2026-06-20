@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require("path");
 const templates = require("../models/templates");
 const { authenticate } = require("../middleware/auth");
 const { requireActiveCompany } = require("../middleware/companyAccess");
@@ -40,14 +39,14 @@ router.get(
       return res.status(404).json({ error: "Template PDF file not found" });
     }
 
-    const filePath = templates.getPdfPath(item.id);
     const safeName = String(item.productName || "template")
       .replace(/[^\w.-]+/g, "_")
       .slice(0, 80);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename="${safeName}.pdf"`);
-    res.sendFile(path.resolve(filePath));
+    const buf = await templates.readPdfBuffer(item.id);
+    res.send(buf);
   }),
 );
 

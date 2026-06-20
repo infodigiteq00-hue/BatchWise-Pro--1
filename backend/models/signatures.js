@@ -1,14 +1,14 @@
-const { files } = require("../config");
-const { readCollection, writeCollection, createId } = require("./jsonStore");
+const { createId } = require("./jsonStore");
+const operationalStore = require("./operationalStore");
 
 async function getAll(firmId) {
-  const items = await readCollection(files.signatures, []);
+  const items = await operationalStore.readSignatures();
   if (!firmId) return items;
   return items.filter((s) => s.firmId === firmId);
 }
 
 async function create(payload, firmId) {
-  const items = await readCollection(files.signatures, []);
+  const items = await operationalStore.readSignatures();
   const entry = {
     id: createId(),
     firmId,
@@ -16,16 +16,16 @@ async function create(payload, firmId) {
     imageDataUrl: payload.imageDataUrl,
   };
   items.unshift(entry);
-  await writeCollection(files.signatures, items);
+  await operationalStore.writeSignatures(items);
   return entry;
 }
 
 async function remove(id, firmId) {
-  const items = await readCollection(files.signatures, []);
+  const items = await operationalStore.readSignatures();
   const target = items.find((s) => s.id === id);
   if (!target || (firmId && target.firmId !== firmId)) return false;
   const next = items.filter((s) => s.id !== id);
-  await writeCollection(files.signatures, next);
+  await operationalStore.writeSignatures(next);
   return true;
 }
 

@@ -1,6 +1,6 @@
-const { files } = require("../config");
-const { readCollection, writeCollection, createId } = require("./jsonStore");
-const stampedPdfFiles = require("../utils/stampedPdfFiles");
+const { createId } = require("./jsonStore");
+const operationalStore = require("./operationalStore");
+const pdfStorage = require("../utils/pdfStorage");
 
 function toPublicRequest(item) {
   if (!item) return null;
@@ -21,19 +21,19 @@ function mapPublic(items) {
 
 async function saveStampedPdfFromDataUrl(id, dataUrl) {
   if (!dataUrl) return;
-  await stampedPdfFiles.saveFromDataUrl(id, dataUrl);
+  await pdfStorage.saveStampedPdf(id, dataUrl);
 }
 
 async function getAll(firmId, status) {
-  let items = await readCollection(files.requests, []);
+  let items = await operationalStore.readRequests();
   if (firmId) items = items.filter((r) => r.firmId === firmId);
   if (status) items = items.filter((r) => r.status === status);
   return mapPublic(items);
 }
 
 async function getById(id, firmId) {
-  const item =
-    (await readCollection(files.requests, [])).find((r) => r.id === id) ?? null;
+  const items = await operationalStore.readRequests();
+  const item = items.find((r) => r.id === id) ?? null;
   if (!item) return null;
   if (firmId && item.firmId !== firmId) return null;
   return item;
@@ -45,7 +45,7 @@ async function getByIdPublic(id, firmId) {
 }
 
 async function create(payload, firmId) {
-  const items = await readCollection(files.requests, []);
+  const items = await operationalStore.readRequests();
   const entry = {
     id: createId(),
     firmId,
@@ -59,17 +59,17 @@ async function create(payload, firmId) {
     status: "pending",
   };
   items.unshift(entry);
-  await writeCollection(files.requests, items);
+  await operationalStore.writeRequests(items);
   return entry;
 }
 
 async function update(id, patch, firmId) {
-  const items = await readCollection(files.requests, []);
+  const items = await operationalStore.readRequests();
   const index = items.findIndex((r) => r.id === id);
   if (index === -1) return null;
   if (firmId && items[index].firmId !== firmId) return null;
   items[index] = { ...items[index], ...patch };
-  await writeCollection(files.requests, items);
+  await operationalStore.writeRequests(items);
   return items[index];
 }
 
@@ -143,21 +143,23 @@ async function updateStampedPdf(id, stampedPdfDataUrl, firmId) {
 }
 
 async function migrateStampedPdfsToFiles() {
-  const items = await readCollection(files.requests, []);
+  if (operationalStore.useCloudOperationalStore()) return;
+
+  const items = await operationalStore.readRequests();
   let changed = false;
 
   for (const item of items) {
     const dataUrl = item.approval?.stampedPdfDataUrl;
     if (!dataUrl) continue;
-    if (!(await stampedPdfFiles.exists(item.id))) {
-      await stampedPdfFiles.saveFromDataUrl(item.id, dataUrl);
+    if (!(await pdfStorage.stampedPdfExists(item.id))) {
+      await pdfStorage.saveStampedPdf(item.id, dataUrl);
     }
     delete item.approval.stampedPdfDataUrl;
     changed = true;
   }
 
   if (changed) {
-    await writeCollection(files.requests, items);
+    await operationalStore.writeRequests(items);
   }
 }
 
@@ -172,7 +174,6 @@ module.exports = {
   reject,
   updateStampedPdf,
   migrateStampedPdfsToFiles,
-  stampedPdfExists: stampedPdfFiles.exists,
-  getStampedPdfPath: stampedPdfFiles.pdfFilePath,
-  readStampedPdfBuffer: stampedPdfFiles.readBuffer,
+  stampedPdfExists: pdfStorage.stampedPdfExists,
+  readStampedPdfBuffer: pdfStorage.readStampedPdfBuffer,
 };

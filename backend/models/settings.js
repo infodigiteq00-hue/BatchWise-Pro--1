@@ -1,5 +1,4 @@
-const { files } = require("../config");
-const { readCollection, writeCollection } = require("./jsonStore");
+const operationalStore = require("./operationalStore");
 
 const defaults = {
   productionUser: "Production User",
@@ -10,7 +9,6 @@ function normalizeRows(stored) {
   if (Array.isArray(stored)) return stored;
   if (!stored || typeof stored !== "object") return [];
 
-  // Backward compatibility: old single-tenant shape
   if ("productionUser" in stored || "qaUser" in stored) {
     return [
       {
@@ -24,7 +22,7 @@ function normalizeRows(stored) {
 }
 
 async function getAll() {
-  const stored = await readCollection(files.settings, []);
+  const stored = await operationalStore.readSettingsRows();
   return normalizeRows(stored);
 }
 
@@ -50,7 +48,7 @@ async function update(firmId, patch) {
       qaUser: patch.qaUser ?? rows[index].qaUser,
     };
   }
-  await writeCollection(files.settings, rows);
+  await operationalStore.writeSettingsRows(rows);
   return get(firmId);
 }
 

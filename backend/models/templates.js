@@ -1,7 +1,6 @@
-const path = require("path");
-const { files } = require("../config");
-const { readCollection, writeCollection, createId } = require("./jsonStore");
-const templatePdfFiles = require("../utils/templatePdfFiles");
+const { createId } = require("./jsonStore");
+const operationalStore = require("./operationalStore");
+const pdfStorage = require("../utils/pdfStorage");
 
 function toPublicTemplate(item) {
   if (!item) return null;
@@ -13,13 +12,13 @@ function toPublicTemplate(item) {
 }
 
 async function getAll(firmId) {
-  const items = await readCollection(files.templates, []);
+  const items = await operationalStore.readTemplates();
   const filtered = firmId ? items.filter((t) => t.firmId === firmId) : items;
   return filtered.map(toPublicTemplate);
 }
 
 async function getById(id, firmId) {
-  const items = await readCollection(files.templates, []);
+  const items = await operationalStore.readTemplates();
   const item = items.find((t) => t.id === id) ?? null;
   if (!item) return null;
   if (firmId && item.firmId !== firmId) return null;
@@ -40,9 +39,9 @@ async function create(payload, firmId) {
   }
 
   const id = createId();
-  await templatePdfFiles.saveFromDataUrl(id, pdfDataUrl);
+  await pdfStorage.saveTemplatePdf(id, pdfDataUrl);
 
-  const items = await readCollection(files.templates, []);
+  const items = await operationalStore.readTemplates();
   const entry = {
     id,
     firmId,
@@ -51,35 +50,37 @@ async function create(payload, firmId) {
     uploadedAt: payload.uploadedAt || new Date().toISOString(),
   };
   items.unshift(entry);
-  await writeCollection(files.templates, items);
+  await operationalStore.writeTemplates(items);
   return toPublicTemplate(entry);
 }
 
 async function remove(id, firmId) {
-  const items = await readCollection(files.templates, []);
+  const items = await operationalStore.readTemplates();
   const target = items.find((t) => t.id === id);
   if (!target || (firmId && target.firmId !== firmId)) return false;
   const next = items.filter((t) => t.id !== id);
-  await writeCollection(files.templates, next);
-  await templatePdfFiles.remove(id);
+  await operationalStore.writeTemplates(next);
+  await pdfStorage.removeTemplatePdf(id);
   return true;
 }
 
 async function migrateDataUrlsToFiles() {
-  const items = await readCollection(files.templates, []);
+  if (operationalStore.useCloudOperationalStore()) return;
+
+  const items = await operationalStore.readTemplates();
   let changed = false;
 
   for (const item of items) {
     if (!item.pdfDataUrl) continue;
-    if (!(await templatePdfFiles.exists(item.id))) {
-      await templatePdfFiles.saveFromDataUrl(item.id, item.pdfDataUrl);
+    if (!(await pdfStorage.templatePdfExists(item.id))) {
+      await pdfStorage.saveTemplatePdf(item.id, item.pdfDataUrl);
     }
     delete item.pdfDataUrl;
     changed = true;
   }
 
   if (changed) {
-    await writeCollection(files.templates, items);
+    await operationalStore.writeTemplates(items);
   }
 }
 
@@ -91,7 +92,6 @@ module.exports = {
   create,
   remove,
   migrateDataUrlsToFiles,
-  getPdfPath: templatePdfFiles.pdfFilePath,
-  pdfExists: templatePdfFiles.exists,
-  readPdfBuffer: templatePdfFiles.readBuffer,
+  pdfExists: pdfStorage.templatePdfExists,
+  readPdfBuffer: pdfStorage.readTemplatePdfBuffer,
 };

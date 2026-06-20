@@ -1,5 +1,6 @@
 const { files } = require("../config");
 const { isSupabaseEnabled, getSupabase } = require("../db/supabase");
+const { useCloudControlStore } = require("../db/storageMode");
 const {
   firmToRow,
   firmFromRow,
@@ -9,7 +10,7 @@ const {
 const { readCollection, writeCollection } = require("./jsonStore");
 
 async function readFirms() {
-  if (!isSupabaseEnabled()) {
+  if (!useCloudControlStore()) {
     const firms = await readCollection(files.firms, []);
     return firms.map((f) => ({ status: "active", ...f }));
   }
@@ -28,7 +29,7 @@ async function readFirms() {
 }
 
 async function writeFirms(firms) {
-  if (!isSupabaseEnabled()) {
+  if (!useCloudControlStore()) {
     await writeCollection(files.firms, firms);
     return;
   }
@@ -75,7 +76,7 @@ async function writeFirms(firms) {
 }
 
 async function readUsers() {
-  if (!isSupabaseEnabled()) {
+  if (!useCloudControlStore()) {
     return readCollection(files.users, []);
   }
 
@@ -93,7 +94,7 @@ async function readUsers() {
 }
 
 async function writeUsers(users) {
-  if (!isSupabaseEnabled()) {
+  if (!useCloudControlStore()) {
     await writeCollection(files.users, users);
     return;
   }
@@ -141,6 +142,7 @@ async function writeUsers(users) {
 
 module.exports = {
   isSupabaseEnabled,
+  useCloudControlStore,
   readFirms,
   writeFirms,
   readUsers,
